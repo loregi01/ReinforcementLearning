@@ -5,8 +5,8 @@ import random
 from collections import defaultdict
 
 learning_rate = 0.01
-n_episodes = 50000
-start_epsilon = 0.5
+n_episodes = 100000
+start_epsilon = 1.0
 epsilon_decay = start_epsilon / (n_episodes / 2)
 final_epsilon = 0.1
 eps = start_epsilon
