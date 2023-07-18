@@ -5,6 +5,12 @@ import random
 from collections import defaultdict
 import matplotlib.pyplot as plt
 
+"""
+For the visualization part:
+  env = gym.make('MountainCar-v0', render_mode="human")
+  env.render()
+"""
+
 learning_rate = 0.01
 n_episodes = 100000
 start_epsilon = 1.0
@@ -50,7 +56,7 @@ for episode in range(n_episodes):
         Q[(observation[0],observation[1])][action] += learning_rate * (reward + discount_factor * np.max(Q[(new_observation[0],new_observation[1])]) - Q[(observation[0], observation[1])][action])
 
         observation = new_observation
-        
+
     eps = max(final_epsilon, eps - epsilon_decay)
     #print(eps)
 
