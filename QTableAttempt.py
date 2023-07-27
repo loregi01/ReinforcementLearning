@@ -60,6 +60,7 @@ for episode in range(n_episodes):
     eps = max(final_epsilon, eps - epsilon_decay)
     #print(eps)
 
+"""
 for episode in range(n_episodes):
   observation = env.reset()
   observation = observation[0]
@@ -84,6 +85,7 @@ for episode in range(n_episodes):
     done = terminated or truncated
     
     observation = new_observation
+"""
 
 rolling_length = 500
 fig, axs = plt.subplots(ncols=2, figsize=(15, 5))
