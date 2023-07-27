@@ -35,13 +35,13 @@ def main():
   
   model = None
 
-  if not os.path.exists("C:/Users/39377/Desktop/MasterDegree/AI&ML/ML/Progetto/model"):
+  if not os.path.exists("C:/Users/39377/Desktop/MasterDegree/AI&ML/ML/Project/ML-Project/model"):
     print('Training...')
     model = get_model(input_shape, actions)
 
-    n_episodes = 50
+    n_episodes = 100
     start_epsilon = 1
-    epsilon_decay = 0.95
+    epsilon_decay = 0.99
     final_epsilon = 0.1
     eps = start_epsilon
     discount_factor = 0.95
@@ -50,9 +50,8 @@ def main():
     
       observation = env.reset()
       observation = observation[0]
-      eps = eps*epsilon_decay
       observation = observation.reshape(1,2)
-      #round(observation[0], 2) per il round a 2 cifre decimali
+
       done = False
       print('episode :' + '' + str(episode))
       #time.sleep(2)
@@ -64,31 +63,34 @@ def main():
           action = np.random.randint(0, env.action_space.n)
         else:
           input = np.array(observation, dtype = np.float32)
-          out = model.predict(input)
+          out = model.predict_on_batch(input)
           action = np.argmax(out)
 
         new_observation, reward, terminated, truncated, info = env.step(action)
         new_observation = new_observation.reshape(1,2)
         done = terminated or truncated
 
-        #new_observation = np.array([new_observation], dtype = np.float32)
         input = np.array(new_observation, dtype = np.float32)
 
-        r = np.max(model.predict(input))
+        r = np.max(model.predict_on_batch(input))
         target = reward + discount_factor *r
 
-        target_vector = model.predict(np.array(observation, dtype = np.float32))[0]
+        target_vector = model.predict_on_batch(np.array(observation, dtype = np.float32))[0]
         target_vector[action] = target
 
         x = np.array(observation, dtype = np.float32)
-        y = np.array([target_vector]) #target_vector.reshape(-1, env.action_space.n)
+        y = np.array([target_vector]) 
 
-        model.fit(x, y, epochs=1, verbose = 0) #verbose=0
+        model.fit(x, y, epochs=1, verbose = 0)
         observation = new_observation
+
+        eps = eps*epsilon_decay
+        if eps < final_epsilon:
+          eps = final_epsilon
   
-    model.save("C:/Users/39377/Desktop/MasterDegree/AI&ML/ML/Progetto/model")
+    model.save("C:/Users/39377/Desktop/MasterDegree/AI&ML/ML/Project/ML-Project/model")
   
-  model = keras.models.load_model("C:/Users/39377/Desktop/MasterDegree/AI&ML/ML/Progetto/model")
+  model = keras.models.load_model("C:/Users/39377/Desktop/MasterDegree/AI&ML/ML/Project/ML-Project/model")
 
   observation = env.reset()
   observation = observation[0]
@@ -105,7 +107,7 @@ def main():
     
     observation = observation.reshape(1,2)
     input = np.array(observation, dtype = np.float32)
-    out = model.predict(input)
+    out = model.predict_on_batch(input)
     action = np.argmax(out[0])
     new_observation, reward, terminated, truncated, info = env.step(action) 
     done = terminated or truncated
@@ -113,21 +115,14 @@ def main():
     if observation[0] >= best_observation[0]:
       best_observation = observation
 
-    env.render()
+    #env.render()
 
   print(best_observation)
-
-  rolling_length = 500
-  fig2, axs2 = plt.subplots(ncols=1, figsize=(15, 5))
-
-  axs2.set_title("Positions Per Episode")
-  episode_position = np.convolve(np.array(position_queue).flatten(), np.ones(rolling_length), mode="valid")/rolling_length
-  axs2.plot(range(len(episode_position)), episode_position)
-
-  plt.show()
 
   if best_observation[0] >= 0.5:
     print('flag reached')
 
 
 main()
+
+
