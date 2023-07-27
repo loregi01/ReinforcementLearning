@@ -35,11 +35,11 @@ def main():
   
   model = None
 
-  if not os.path.exists("C:/Users/39377/Desktop/MasterDegree/AI&ML/ML/Project/ML-Project/model"):
+  if not os.path.exists("C:/Users/39377/Desktop/MasterDegree/AI&ML/ML/Project/ReinforcementLearning/model"):
     print('Training...')
     model = get_model(input_shape, actions)
 
-    n_episodes = 100
+    n_episodes = 3
     start_epsilon = 1
     epsilon_decay = 0.99
     final_epsilon = 0.1
@@ -87,10 +87,10 @@ def main():
         eps = eps*epsilon_decay
         if eps < final_epsilon:
           eps = final_epsilon
+        
+      model.save("C:/Users/39377/Desktop/MasterDegree/AI&ML/ML/Project/ReinforcementLearning/model")
   
-    model.save("C:/Users/39377/Desktop/MasterDegree/AI&ML/ML/Project/ML-Project/model")
-  
-  model = keras.models.load_model("C:/Users/39377/Desktop/MasterDegree/AI&ML/ML/Project/ML-Project/model")
+  model = keras.models.load_model("C:/Users/39377/Desktop/MasterDegree/AI&ML/ML/Project/ReinforcementLearning/model")
 
   observation = env.reset()
   observation = observation[0]
@@ -99,11 +99,8 @@ def main():
   done = False
   best_observation = observation
   
-  position_queue = []
 
   while not done :
-
-    position_queue.append(observation[0])
     
     observation = observation.reshape(1,2)
     input = np.array(observation, dtype = np.float32)
@@ -114,8 +111,6 @@ def main():
     observation = new_observation
     if observation[0] >= best_observation[0]:
       best_observation = observation
-
-    #env.render()
 
   print(best_observation)
 
