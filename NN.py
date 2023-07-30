@@ -2,6 +2,7 @@ import gym
 from gym import Env
 import numpy as np
 import random
+from collections import deque
 import time
 import os
 from collections import defaultdict
@@ -27,22 +28,25 @@ def get_model(input_shape, actions):
 
 
 def main():
-   
+
   env = gym.make('MountainCar-v0', render_mode="human")
 
   input_shape = env.observation_space.shape
   actions = env.action_space.n
   
+  EXP_MAX_SIZE = 10000 # Max batch size of past experience
+  BATCH_SIZE = EXP_MAX_SIZE//10 # Training set size
+  experience = deque([],EXP_MAX_SIZE) # Past experience arranged as a queue
   model = None
 
   if not os.path.exists("C:/Users/39377/Desktop/MasterDegree/AI&ML/ML/Project/ReinforcementLearning/model"):
     print('Training...')
     model = get_model(input_shape, actions)
 
-    n_episodes = 3
+    n_episodes = 500
     start_epsilon = 1
     epsilon_decay = 0.99
-    final_epsilon = 0.1
+    final_epsilon = 0.05
     eps = start_epsilon
     discount_factor = 0.95
 
@@ -50,7 +54,6 @@ def main():
     
       observation = env.reset()
       observation = observation[0]
-      observation = observation.reshape(1,2)
 
       done = False
       print('episode :' + '' + str(episode))
@@ -59,37 +62,52 @@ def main():
       while not done:
         action = -1
 
-        if np.random.random() < eps:
+        temp = np.random.random()
+        if temp < eps:
           action = np.random.randint(0, env.action_space.n)
         else:
-          input = np.array(observation, dtype = np.float32)
+          input = np.array(observation.reshape(1,2), dtype = np.float32)
           out = model.predict_on_batch(input)
           action = np.argmax(out)
 
         new_observation, reward, terminated, truncated, info = env.step(action)
-        new_observation = new_observation.reshape(1,2)
         done = terminated or truncated
 
-        input = np.array(new_observation, dtype = np.float32)
+        input = np.array(new_observation.reshape(1,2), dtype = np.float32)
 
         r = np.max(model.predict_on_batch(input))
         target = reward + discount_factor *r
 
-        target_vector = model.predict_on_batch(np.array(observation, dtype = np.float32))[0]
+        target_vector = model.predict_on_batch(np.array(observation.reshape(1,2), dtype = np.float32))[0]
         target_vector[action] = target
 
-        x = np.array(observation, dtype = np.float32)
-        y = np.array([target_vector]) 
-
-        model.fit(x, y, epochs=1, verbose = 0)
+        if len(experience) >= EXP_MAX_SIZE:
+          experience.popleft()
+        
+        item = np.array([np.array(observation), np.array(target_vector)], dtype=object)
+        experience.append(item)
         observation = new_observation
 
-        eps = eps*epsilon_decay
-        if eps < final_epsilon:
-          eps = final_epsilon
+        if done:
+          if len(experience) >= BATCH_SIZE and (episode+1) % 10 == 0:
+            batch = random.sample(experience, BATCH_SIZE)
+            dataset = np.array(batch, dtype=object)
+            x = dataset[:,0]
+            y = dataset[:,1]
+            
+            t1 = list()
+            t2 = list()
+            for j in range (BATCH_SIZE):
+              t1.append(x[j])
+              t2.append(y[j])
+
+            model.fit(tf.constant(t1), tf.constant(t2), epochs = 1, verbose = 0, validation_split = 0.2)
+            model.save("C:/Users/39377/Desktop/MasterDegree/AI&ML/ML/Project/ReinforcementLearning/model")
+            eps -= eps/100
+
+            if eps < final_epsilon:
+              eps = final_epsilon
         
-      model.save("C:/Users/39377/Desktop/MasterDegree/AI&ML/ML/Project/ReinforcementLearning/model")
-  
   model = keras.models.load_model("C:/Users/39377/Desktop/MasterDegree/AI&ML/ML/Project/ReinforcementLearning/model")
 
   observation = env.reset()
