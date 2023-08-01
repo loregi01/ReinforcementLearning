@@ -44,8 +44,8 @@ def main():
     model = get_model(input_shape, actions)
 
     n_episodes = 500
-    start_epsilon = 1
-    epsilon_decay = 0.99
+    start_epsilon = 0.9
+    #epsilon_decay = 0.99
     final_epsilon = 0.05
     eps = start_epsilon
     discount_factor = 0.95
@@ -54,6 +54,7 @@ def main():
     
       observation = env.reset()
       observation = observation[0]
+      initial_position = observation[0]
 
       done = False
       print('episode :' + '' + str(episode))
@@ -72,11 +73,15 @@ def main():
 
         new_observation, reward, terminated, truncated, info = env.step(action)
         done = terminated or truncated
+        #reward = reward + abs(new_observation[0] - initial_position)
+        if new_observation[0] >= 0.5:
+          reward = 100
+        else:
+          reward = (new_observation[0] - 0.5) / (abs(new_observation[1])*1000)
 
         input = np.array(new_observation.reshape(1,2), dtype = np.float32)
-
         r = np.max(model.predict_on_batch(input))
-        target = reward + discount_factor *r
+        target = reward + discount_factor*r
 
         target_vector = model.predict_on_batch(np.array(observation.reshape(1,2), dtype = np.float32))[0]
         target_vector[action] = target
@@ -100,6 +105,7 @@ def main():
             for j in range (BATCH_SIZE):
               t1.append(x[j])
               t2.append(y[j])
+    
 
             model.fit(tf.constant(t1), tf.constant(t2), epochs = 1, verbose = 0, validation_split = 0.2)
             model.save("C:/Users/39377/Desktop/MasterDegree/AI&ML/ML/Project/ReinforcementLearning/model")
