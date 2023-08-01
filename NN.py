@@ -44,8 +44,7 @@ def main():
     model = get_model(input_shape, actions)
 
     n_episodes = 500
-    start_epsilon = 0.9
-    #epsilon_decay = 0.99
+    start_epsilon = 1
     final_epsilon = 0.05
     eps = start_epsilon
     discount_factor = 0.95
@@ -74,42 +73,48 @@ def main():
         new_observation, reward, terminated, truncated, info = env.step(action)
         done = terminated or truncated
         #reward = reward + abs(new_observation[0] - initial_position)
-        if new_observation[0] >= 0.5:
-          reward = 100
-        else:
-          reward = (new_observation[0] - 0.5) / (abs(new_observation[1])*1000)
+        #if new_observation[0] >= 0.5:
+          #reward = 100
+        #else:
+          #reward = (new_observation[0] - 0.5) / (abs(new_observation[1])*1000)
 
-        input = np.array(new_observation.reshape(1,2), dtype = np.float32)
-        r = np.max(model.predict_on_batch(input))
-        target = reward + discount_factor*r
+        #input = np.array(new_observation.reshape(1,2), dtype = np.float32)
+        #r = np.max(model.predict_on_batch(input))
+        #target = reward + discount_factor*r
 
-        target_vector = model.predict_on_batch(np.array(observation.reshape(1,2), dtype = np.float32))[0]
-        target_vector[action] = target
+        #target_vector = model.predict_on_batch(np.array(observation.reshape(1,2), dtype = np.float32))[0]
+        #target_vector[action] = target
 
         if len(experience) >= EXP_MAX_SIZE:
           experience.popleft()
         
-        item = np.array([np.array(observation), np.array(target_vector)], dtype=object)
+        item = np.array([np.array(observation), action, new_observation, reward], dtype=object)
         experience.append(item)
         observation = new_observation
 
         if done:
-          if len(experience) >= BATCH_SIZE and (episode+1) % 10 == 0:
+          if len(experience) >= BATCH_SIZE and (episode+1) % 5 == 0:
             batch = random.sample(experience, BATCH_SIZE)
-            dataset = np.array(batch, dtype=object)
-            x = dataset[:,0]
-            y = dataset[:,1]
-            
             t1 = list()
             t2 = list()
-            for j in range (BATCH_SIZE):
-              t1.append(x[j])
-              t2.append(y[j])
-    
+            for e in batch:
+              obs = e[0]
+              act = e[1]
+              new_obs = e[2]
+              rew = e[3]
+
+              input = np.array(new_obs.reshape(1,2), dtype = np.float32)
+              out = model.predict_on_batch(input)
+              r = np.max(out)
+              target = rew + discount_factor*r
+              target_vector = model.predict_on_batch(np.array(obs.reshape(1,2), dtype = np.float32))[0]
+              target_vector[act] = target
+              t1.append(obs)
+              t2.append(target_vector)
 
             model.fit(tf.constant(t1), tf.constant(t2), epochs = 1, verbose = 0, validation_split = 0.2)
             model.save("C:/Users/39377/Desktop/MasterDegree/AI&ML/ML/Project/ReinforcementLearning/model")
-            eps -= eps/100
+            eps -= 1/200
 
             if eps < final_epsilon:
               eps = final_epsilon
