@@ -13,7 +13,16 @@ from keras.models import Sequential
 from keras.layers import InputLayer
 from keras.layers import Dense
 
+mm_position = []
+mm_reward = []
 
+position_queue = []
+reward_queue = []
+
+def moving_average(a, n):
+  ret = np.cumsum(a, dtype=float)
+  ret[n:] = ret[n:] - ret[:-n]
+  return ret[n - 1:] / n
 
 
 def get_model(input_shape, actions):
@@ -39,11 +48,11 @@ def main():
   experience = deque([],EXP_MAX_SIZE)
   model = None
 
-  if not os.path.exists("C:/Users/39377/Desktop/MasterDegree/AI&ML/ML/Project/ReinforcementLearning/model"):
+  if not os.path.exists("C:/Users/gizzi/OneDrive/Desktop/ReinforcementLearning/model"):
     
     print('Training...')
     model = get_model(input_shape, actions)
-    n_episodes = 500
+    n_episodes = 2000
     start_epsilon = 0.8
     final_epsilon = 0.05
     eps = start_epsilon
@@ -53,6 +62,7 @@ def main():
     
       observation = env.reset()
       observation = observation[0]
+      mm_position.append(observation[0])
 
       done = False
       print('episode :' + '' + str(episode))
@@ -69,6 +79,7 @@ def main():
           action = np.argmax(out[0])
 
         new_observation, reward, terminated, truncated, info = env.step(action)
+        mm_position.append(new_observation[0])
         done = terminated or truncated
 
         if new_observation[0] >= 0.5:
@@ -77,6 +88,8 @@ def main():
             reward = reward + 1
         if new_observation[0] - observation[0] < 0 and action == 0: 
             reward = reward + 1
+
+        mm_reward.append(reward)
 
         if len(experience) >= EXP_MAX_SIZE:
           experience.popleft()
@@ -106,7 +119,7 @@ def main():
               t2.append(target_vector)
 
             model.fit(tf.constant(t1), tf.constant(t2), verbose = 0, validation_split = 0.2)
-            model.save("C:/Users/39377/Desktop/MasterDegree/AI&ML/ML/Project/ReinforcementLearning/model")
+            model.save("C:/Users/gizzi/OneDrive/Desktop/ReinforcementLearning/model")
             eps -= 1/200
 
             if eps < final_epsilon:
@@ -114,8 +127,22 @@ def main():
             
             print("Episode: {}, epsilon: {}".format(episode, eps))
             
-        
-  model = keras.models.load_model("C:/Users/39377/Desktop/MasterDegree/AI&ML/ML/Project/ReinforcementLearning/model")
+  position_queue = moving_average(mm_position, 4020) #201*20
+  reward_queue = moving_average(mm_reward, 4000) #200*20
+
+  rolling_length = 500
+  fig, axs = plt.subplots(ncols=2, figsize=(15, 5))
+  axs[0].set_title("Positions Per Episode (Training)")
+  episode_position_t = np.convolve(np.array(position_queue).flatten(), np.ones(rolling_length), mode="valid")/rolling_length
+  axs[0].plot(range(len(episode_position_t)), episode_position_t)
+
+  axs[1].set_title("Reward Per Episode (Training)")
+  episode_reward_t = np.convolve(np.array(reward_queue).flatten(), np.ones(rolling_length), mode="valid")/rolling_length
+  axs[1].plot(range(len(episode_reward_t)), episode_reward_t)
+
+  plt.show()
+
+  model = keras.models.load_model("C:/Users/gizzi/OneDrive/Desktop/ReinforcementLearning/model")
 
   observation = env.reset()
   observation = observation[0]
