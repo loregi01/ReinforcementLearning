@@ -42,10 +42,7 @@ for episode in range(n_episodes):
     mm.append(observation[0])
 
     while not done:
-        if np.random.random() < eps:
-          action = np.random.randint(0, env.action_space.n)
-        else:
-          action = np.argmax(Q[(observation[0], observation[1])])
+        action = np.random.randint(0, env.action_space.n)
 
         new_observation, reward, terminated, truncated, info = env.step(action)
         mm.append(new_observation[0])
@@ -53,8 +50,6 @@ for episode in range(n_episodes):
         new_observation[1] = round(new_observation[1],2)
 
         done = terminated or truncated
-
-        Q[(observation[0],observation[1])][action] += learning_rate * (reward + discount_factor * np.max(Q[(new_observation[0],new_observation[1])]) - Q[(observation[0], observation[1])][action])
 
         observation = new_observation
 
