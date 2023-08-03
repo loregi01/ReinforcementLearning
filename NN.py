@@ -52,7 +52,7 @@ def main():
     
     print('Training...')
     model = get_model(input_shape, actions)
-    n_episodes = 2000
+    n_episodes = 1000
     start_epsilon = 0.8
     final_epsilon = 0.05
     eps = start_epsilon
@@ -130,6 +130,7 @@ def main():
   position_queue = moving_average(mm_position, 4020) #201*20
   reward_queue = moving_average(mm_reward, 4000) #200*20
 
+  """
   rolling_length = 500
   fig, axs = plt.subplots(ncols=2, figsize=(15, 5))
   axs[0].set_title("Positions Per Episode (Training)")
@@ -141,6 +142,8 @@ def main():
   axs[1].plot(range(len(episode_reward_t)), episode_reward_t)
 
   plt.show()
+
+  """
 
   model = keras.models.load_model("C:/Users/gizzi/OneDrive/Desktop/ReinforcementLearning/model")
 
